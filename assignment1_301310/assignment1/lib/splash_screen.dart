@@ -13,7 +13,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     //parent is also run properly.
     super.initState();
-    Future.delayed(Duration(seconds: 30), () {
+    Future.delayed(Duration(seconds: 5), () {
       //to avoid error if the widget not display.(avoid crash)
       if (!mounted) return;
       Navigator.pushReplacement(

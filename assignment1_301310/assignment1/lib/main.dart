@@ -13,7 +13,14 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Wallet',
-      theme: ThemeData(primaryColor: Color.fromARGB(255, 33, 47, 243)),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Color.fromARGB(255, 33, 47, 243),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Color.fromARGB(255, 33, 47, 243),
+        ),
+        brightness: Brightness.light,
+      ),
       home: SplashScreen(),
     );
   }
