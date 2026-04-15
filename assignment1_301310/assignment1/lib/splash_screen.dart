@@ -11,8 +11,10 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
+    //parent is also run properly.
     super.initState();
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 30), () {
+      //to avoid error if the widget not display.(avoid crash)
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -24,7 +26,18 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: Text("MyBudget", style: TextStyle(fontSize: 30))),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset("assets/image/logowallet.png", width: 150),
+
+            SizedBox(height: 20),
+
+            Text("MyWallet UUM", style: TextStyle(fontSize: 30)),
+          ],
+        ),
+      ),
     );
   }
 }
