@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -8,14 +10,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final player1 = AudioPlayer();
+  final player2 = AudioPlayer();
+
+  double number1 = 0.0;
+  double number2 = 0.0;
+  double balance = 0.0;
+
+  TextEditingController num1 = TextEditingController();
+  TextEditingController num2 = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final horizontalPadding = width >= 900 ? 48.0 : 20.0;
-    double balance;
-
-    TextEditingController num1 = TextEditingController();
-    TextEditingController num2 = TextEditingController();
 
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 240, 240, 240),
@@ -27,21 +35,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
       body: Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 30,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Image.asset("assets/image/logowallet.png", width: 150),
+
+              SizedBox(height: 50),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Balance: ", style: TextStyle(fontSize: 30)),
-                  SizedBox(width: 20),
+                  Text("Balance: RM ", style: TextStyle(fontSize: 30)),
+
                   Text(
-                    "\$1000",
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                    balance.toStringAsFixed(2),
+                    style: TextStyle(
+                      fontSize: 30,
+                      color: balance >= 0
+                          ? Color.fromARGB(255, 33, 47, 243)
+                          : Color.fromARGB(255, 243, 33, 33),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -85,11 +99,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        balance = double.parse(num1.text);
+                        number1 = double.tryParse(num1.text) ?? 0.0;
+                        number2 = double.tryParse(num2.text) ?? 0.0;
+                        balance += number1; // add deposit
+                        balance -= number2; // subtract expenses
+
+                        num1.clear();
+                        num2.clear();
                       });
-                      // Handle transaction button press
+                      playTransaction();
+
+                      if (balance < 0) {
+                        playNegativeBalance();
+                      }
                     },
-                    child: Text("Transaction", style: TextStyle(fontSize: 20)),
+                    child: Text("Calculate", style: TextStyle(fontSize: 20)),
                   ),
 
                   SizedBox(width: 20),
@@ -111,10 +135,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+
+              SizedBox(height: 10),
+
+              if (balance < 0)
+                Text(
+                  "Negative Balance!",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 243, 33, 33),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void playTransaction() {
+    player1.play(AssetSource('audio/coin.wav'));
+  }
+
+  void playNegativeBalance() {
+    player2.play(
+      AssetSource('audio/reject.wav'),
+      position: Duration(milliseconds: 300),
     );
   }
 }
