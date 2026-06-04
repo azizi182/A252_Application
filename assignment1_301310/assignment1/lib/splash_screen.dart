@@ -1,5 +1,6 @@
 import 'package:assignment1/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,7 +35,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
             SizedBox(height: 20),
 
-            Text("MyWallet UUM", style: TextStyle(fontSize: 30)),
+            Text(
+              "MyWallet UUM",
+              style: GoogleFonts.poppins().copyWith(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 33, 47, 243),
+              ),
+            ),
           ],
         ),
       ),

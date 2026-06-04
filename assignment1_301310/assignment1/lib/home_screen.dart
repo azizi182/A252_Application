@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,19 +29,28 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Color.fromARGB(255, 240, 240, 240),
 
       appBar: AppBar(
-        title: Text('My Wallet Home', style: TextStyle(fontSize: 26)),
-        centerTitle: true,
+        title: Row(
+          children: [
+            FaIcon(FontAwesomeIcons.wallet, size: 28),
+            SizedBox(width: 20),
+            Text('My Wallet', style: TextStyle(fontSize: 26)),
+          ],
+        ),
       ),
 
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 20,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset("assets/image/logowallet.png", width: 150),
 
-              SizedBox(height: 50),
+              SizedBox(height: 20),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -140,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (balance < 0)
                 Text(
-                  "Negative Balance!",
+                  "Negative Balance! Overspending!",
                   style: TextStyle(
                     fontSize: 16,
                     color: Color.fromARGB(255, 243, 33, 33),
@@ -161,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void playNegativeBalance() {
     player2.play(
       AssetSource('audio/reject.wav'),
-      position: Duration(milliseconds: 300),
+      position: Duration(milliseconds: 210),
     );
   }
 }
