@@ -1,3 +1,5 @@
+import 'package:assignment2/screen/homescreen.dart';
+import 'package:assignment2/screen/splashscreen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,12 +11,14 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
+    return MaterialApp(
+      theme: ThemeData(
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color.fromARGB(255, 105, 142, 75),
+          foregroundColor: Color.fromARGB(255, 217, 249, 223),
         ),
       ),
+      home: Homescreen(),
     );
   }
 }
