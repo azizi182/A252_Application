@@ -15,10 +15,10 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           backgroundColor: Color.fromARGB(255, 105, 142, 75),
-          foregroundColor: Color.fromARGB(255, 217, 249, 223),
+          foregroundColor: Color.fromARGB(255, 188, 234, 197),
         ),
       ),
-      home: Homescreen(),
+      home: const Homescreen(),
     );
   }
 }
