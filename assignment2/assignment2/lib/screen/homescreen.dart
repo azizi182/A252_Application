@@ -21,13 +21,38 @@ class _HomescreenState extends State<Homescreen> {
   late double screenWidth, screenHeight;
   final TextEditingController _searchController = TextEditingController();
 
+  String? selectedState;
+  String? selectedDistrict;
+
+  List<String> states = [
+    "Kedah",
+    "Perlis",
+    "Penang",
+    "Perak",
+    "Selangor",
+    "Johor",
+  ];
+
+  Map<String, List<String>> districts = {
+    "Kedah": ["Kota Setar", "Kubang Pasu", "Langkawi"],
+    "Perlis": ["Kangar", "Arau"],
+    "Penang": ["Timur Laut", "Barat Daya"],
+    "Perak": ["Kinta", "Manjung"],
+    "Selangor": ["Petaling", "Klang"],
+    "Johor": ["Johor Bahru", "Muar"],
+  };
+
   @override
   void initState() {
     super.initState();
     loadHomestay();
   }
 
-  Future<void> loadHomestay({String keyword = ""}) async {
+  Future<void> loadHomestay({
+    String keyword = "",
+    String? state,
+    String? district,
+  }) async {
     String url = "";
 
     setState(() {
@@ -41,6 +66,24 @@ class _HomescreenState extends State<Homescreen> {
       if (keyword.isNotEmpty) {
         url =
             "http://slum78.myddns.me/homestay2u/api/homestays?search=$keyword&limit=20";
+
+        List<String> params = [];
+
+        if (keyword.isNotEmpty) {
+          params.add("search=$keyword");
+        }
+
+        if (state != null && state.isNotEmpty) {
+          params.add("state=$state");
+        }
+
+        if (district != null && district.isNotEmpty) {
+          params.add("district=$district");
+        }
+
+        if (params.isNotEmpty) {
+          url += "?${params.join("&")}";
+        }
       }
 
       final response = await http
@@ -125,7 +168,11 @@ class _HomescreenState extends State<Homescreen> {
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: () {
-                    loadHomestay(keyword: _searchController.text);
+                    loadHomestay(
+                      keyword: _searchController.text,
+                      state: selectedState,
+                      district: selectedDistrict,
+                    );
                   },
                 ),
 
@@ -134,60 +181,82 @@ class _HomescreenState extends State<Homescreen> {
                 ),
               ),
               onSubmitted: (value) {
-                loadHomestay(keyword: value);
+                loadHomestay(
+                  keyword: value,
+                  state: selectedState,
+                  district: selectedDistrict,
+                );
               },
             ),
           ),
-
-          Expanded(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator())
-                : statusMessage.isNotEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 60,
-                            color: Colors.red,
-                          ),
-
-                          SizedBox(height: 12),
-
-                          Text(
-                            statusMessage,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      await loadHomestay(keyword: _searchController.text);
-                    },
-                    child: GridView.builder(
-                      padding: const EdgeInsets.all(10),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: 0.65,
-                          ),
-                      itemCount: homestays.length,
-                      itemBuilder: (context, index) {
-                        return homestayCard(homestays[index], context);
-                      },
-                    ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                // State Dropdown
+                DropdownButtonFormField<String>(
+                  value: selectedState,
+                  decoration: const InputDecoration(
+                    labelText: "Select State",
+                    border: OutlineInputBorder(),
                   ),
+                  items: states.map((state) {
+                    return DropdownMenuItem(value: state, child: Text(state));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedState = value;
+                      selectedDistrict = null;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // District Dropdown
+                DropdownButtonFormField<String>(
+                  value: selectedDistrict,
+                  decoration: const InputDecoration(
+                    labelText: "Select District",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: selectedState == null
+                      ? []
+                      : districts[selectedState]!
+                            .map(
+                              (district) => DropdownMenuItem(
+                                value: district,
+                                child: Text(district),
+                              ),
+                            )
+                            .toList(),
+                  onChanged: selectedState == null
+                      ? null
+                      : (value) {
+                          setState(() {
+                            selectedDistrict = value;
+                          });
+                        },
+                ),
+
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.search),
+                    label: const Text("Search"),
+                    onPressed: () {
+                      loadHomestay(
+                        keyword: _searchController.text,
+                        state: selectedState,
+                        district: selectedDistrict,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
