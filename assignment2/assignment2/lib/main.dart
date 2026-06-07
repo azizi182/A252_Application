@@ -1,5 +1,5 @@
 import 'package:assignment2/screen/homescreen.dart';
-import 'package:assignment2/screen/splashscreen.dart';
+//import 'package:assignment2/screen/splashscreen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           backgroundColor: Color.fromARGB(255, 105, 142, 75),
-          foregroundColor: Color.fromARGB(255, 188, 234, 197),
+          foregroundColor: Color.fromRGBO(188, 234, 197, 1),
         ),
       ),
       home: const Homescreen(),

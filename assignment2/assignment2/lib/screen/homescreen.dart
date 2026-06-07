@@ -18,7 +18,6 @@ class _HomescreenState extends State<Homescreen> {
   List<HomeModel> homestays = [];
   String statusMessage = "";
 
-  late double screenWidth, screenHeight;
   final TextEditingController _searchController = TextEditingController();
 
   String? selectedState;
@@ -63,27 +62,22 @@ class _HomescreenState extends State<Homescreen> {
     try {
       url = "http://slum78.myddns.me/homestay2u/api/homestays";
 
+      List<String> params = [];
+
       if (keyword.isNotEmpty) {
-        url =
-            "http://slum78.myddns.me/homestay2u/api/homestays?search=$keyword&limit=20";
+        params.add("search=$keyword");
+      }
 
-        List<String> params = [];
+      if (state != null && state.isNotEmpty) {
+        params.add("state=$state");
+      }
 
-        if (keyword.isNotEmpty) {
-          params.add("search=$keyword");
-        }
+      if (district != null && district.isNotEmpty) {
+        params.add("district=$district");
+      }
 
-        if (state != null && state.isNotEmpty) {
-          params.add("state=$state");
-        }
-
-        if (district != null && district.isNotEmpty) {
-          params.add("district=$district");
-        }
-
-        if (params.isNotEmpty) {
-          url += "?${params.join("&")}";
-        }
+      if (params.isNotEmpty) {
+        url += "?${params.join("&")}";
       }
 
       final response = await http
@@ -132,14 +126,6 @@ class _HomescreenState extends State<Homescreen> {
 
   @override
   Widget build(BuildContext context) {
-    screenWidth = MediaQuery.of(context).size.width;
-    screenHeight = MediaQuery.of(context).size.height;
-    if (screenWidth > 600) {
-      screenWidth = 600;
-    } else {
-      screenWidth = screenWidth;
-    }
-
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 255, 255, 255),
 
@@ -159,50 +145,83 @@ class _HomescreenState extends State<Homescreen> {
             padding: const EdgeInsets.all(12),
 
             // Search Bar
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "Search homestay, state, district...",
-                prefixIcon: const Icon(Icons.search),
-
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    loadHomestay(
-                      keyword: _searchController.text,
-                      state: selectedState,
-                      district: selectedDistrict,
-                    );
-                  },
-                ),
-
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: "Search homestay...",
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Color.fromARGB(255, 105, 142, 75),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      Icons.send,
+                      color: Color.fromARGB(255, 105, 142, 75),
+                    ),
+                    onPressed: () {
+                      loadHomestay(
+                        keyword: _searchController.text,
+                        state: selectedState,
+                        district: selectedDistrict,
+                      );
+                    },
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 15),
                 ),
               ),
-              onSubmitted: (value) {
-                loadHomestay(
-                  keyword: value,
-                  state: selectedState,
-                  district: selectedDistrict,
-                );
-              },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+
+          //dropdown
+          Container(
+            margin: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Color.fromRGBO(238, 255, 241, 1),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+
             child: Column(
               children: [
-                // State Dropdown
                 DropdownButtonFormField<String>(
                   value: selectedState,
-                  decoration: const InputDecoration(
-                    labelText: "Select State",
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: "State",
+
+                    prefixIcon: Icon(
+                      Icons.location_city,
+                      color: Color.fromARGB(255, 105, 142, 75),
+                    ),
+
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+
                   items: states.map((state) {
                     return DropdownMenuItem(value: state, child: Text(state));
                   }).toList(),
+
                   onChanged: (value) {
                     setState(() {
                       selectedState = value;
@@ -216,10 +235,19 @@ class _HomescreenState extends State<Homescreen> {
                 // District Dropdown
                 DropdownButtonFormField<String>(
                   value: selectedDistrict,
-                  decoration: const InputDecoration(
-                    labelText: "Select District",
-                    border: OutlineInputBorder(),
+
+                  decoration: InputDecoration(
+                    labelText: "District",
+
+                    prefixIcon: Icon(
+                      Icons.map,
+                      color: Color.fromARGB(255, 105, 142, 75),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+
                   items: selectedState == null
                       ? []
                       : districts[selectedState]!
@@ -241,22 +269,121 @@ class _HomescreenState extends State<Homescreen> {
 
                 const SizedBox(height: 10),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.search),
-                    label: const Text("Search"),
-                    onPressed: () {
-                      loadHomestay(
+                Row(
+                  children: [
+                    //clear button
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            selectedState = null;
+                            selectedDistrict = null;
+                          });
+
+                          loadHomestay();
+                        },
+
+                        icon: const Icon(Icons.refresh),
+                        label: const Text("Clear"),
+
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // search button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          loadHomestay(
+                            keyword: _searchController.text,
+                            state: selectedState,
+                            district: selectedDistrict,
+                          );
+                        },
+                        icon: const Icon(Icons.search),
+                        label: const Text("Search"),
+
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 105, 142, 75),
+                          foregroundColor: Colors.white,
+                          elevation: 5,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : statusMessage.isNotEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 60,
+                            color: Colors.red,
+                          ),
+
+                          SizedBox(height: 12),
+
+                          Text(
+                            statusMessage,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      await loadHomestay(
                         keyword: _searchController.text,
                         state: selectedState,
                         district: selectedDistrict,
                       );
                     },
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(10),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.65,
+                          ),
+                      itemCount: homestays.length,
+                      itemBuilder: (context, index) {
+                        return homestayCard(homestays[index], context);
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
