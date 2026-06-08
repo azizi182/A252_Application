@@ -5,6 +5,7 @@ import 'package:assignment2/models/home_model.dart';
 import 'package:assignment2/screen/detailscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -16,6 +17,7 @@ class Homescreen extends StatefulWidget {
 class _HomescreenState extends State<Homescreen> {
   bool isLoading = true;
   List<HomeModel> homestays = [];
+  List<String> saveSearchHistory = [];
   String statusMessage = "";
 
   final TextEditingController _searchController = TextEditingController();
@@ -30,21 +32,60 @@ class _HomescreenState extends State<Homescreen> {
     "Perak",
     "Selangor",
     "Johor",
+    "Kelantan",
+    "Terengganu",
+    "Pahang",
+    "Negeri Sembilan",
+    "Melaka",
+    "Sabah",
+    "Sarawak",
   ];
 
   Map<String, List<String>> districts = {
-    "Kedah": ["Kota Setar", "Kubang Pasu", "Langkawi"],
+    "Kedah": ["Alor Setar", "Kubang Pasu", "Langkawi"],
     "Perlis": ["Kangar", "Arau"],
     "Penang": ["Timur Laut", "Barat Daya"],
     "Perak": ["Kinta", "Manjung"],
     "Selangor": ["Petaling", "Klang"],
     "Johor": ["Johor Bahru", "Muar"],
+    "Kelantan": ["Kota Bharu", "Rantau Panjang"],
+    "Terengganu": ["Kuala Terengganu", "Kemaman"],
+    "Pahang": ["Kuantan", "Cameron Highlands"],
+    "Negeri Sembilan": ["Seremban", "Port Dickson"],
+    "Melaka": ["Melaka Tengah", "Alor Gajah"],
+    "Sabah": ["Kota Kinabalu", "Sandakan"],
+    "Sarawak": ["Kuching", "Miri"],
   };
 
   @override
   void initState() {
     super.initState();
     loadHomestay();
+    loadSearchHistory();
+  }
+
+  Future<void> saveSearch(String keyword) async {
+    keyword = keyword.trim();
+
+    if (keyword.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    List<String> history = prefs.getStringList('search_history') ?? [];
+
+    history.remove(keyword);
+
+    history.insert(0, keyword);
+
+    if (history.length > 3) {
+      history = history.sublist(0, 3);
+    }
+
+    await prefs.setStringList('search_history', history);
+
+    setState(() {
+      saveSearchHistory = history;
+    });
   }
 
   Future<void> loadHomestay({
@@ -124,6 +165,14 @@ class _HomescreenState extends State<Homescreen> {
     }
   }
 
+  Future<void> loadSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      saveSearchHistory = prefs.getStringList('search_history') ?? [];
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -184,6 +233,42 @@ class _HomescreenState extends State<Homescreen> {
               ),
             ),
           ),
+
+          // Search History
+          if (saveSearchHistory.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Recent Searches",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Wrap(
+                    spacing: 8,
+                    children: saveSearchHistory.map((item) {
+                      return ActionChip(
+                        avatar: const Icon(Icons.history, size: 18),
+                        label: Text(item),
+                        onPressed: () {
+                          _searchController.text = item;
+
+                          loadHomestay(
+                            keyword: item,
+                            state: selectedState,
+                            district: selectedDistrict,
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
 
           //dropdown
           Container(
@@ -305,6 +390,8 @@ class _HomescreenState extends State<Homescreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
+                          saveSearch(_searchController.text);
+
                           loadHomestay(
                             keyword: _searchController.text,
                             state: selectedState,
@@ -330,6 +417,37 @@ class _HomescreenState extends State<Homescreen> {
               ],
             ),
           ),
+
+          Divider(color: Colors.grey.shade300, thickness: 1, height: 1),
+
+          // Homestay List
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "${homestays.length} Homestays Found",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+
+                  if (selectedState != null || selectedDistrict != null)
+                    Chip(label: Text("Filtered")),
+                ],
+              ),
+            ),
+          ),
+
+          Divider(color: Colors.grey.shade300, thickness: 1, height: 1),
 
           Expanded(
             child: isLoading
