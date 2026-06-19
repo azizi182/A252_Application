@@ -31,14 +31,21 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Image(
-              image: AssetImage('assets/images/findback_logo.png'),
-              width: 200,
-              height: 200,
+          children: [
+            // Image.asset('assets/image/lostlink_logo.png'),
+            const SizedBox(height: 16),
+
+            const Text(
+              'LostLink',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0A6DFF),
+              ),
             ),
-            SizedBox(height: 16),
-            CircularProgressIndicator(),
+
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(),
           ],
         ),
       ),
