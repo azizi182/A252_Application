@@ -1,11 +1,16 @@
+import 'dart:convert';
+
 import 'package:finalassignment/models/report_model.dart';
+import 'package:finalassignment/models/user_model.dart';
 import 'package:finalassignment/service/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class DetailScreen extends StatefulWidget {
+  final UserModel? user;
   final ReportModel? report;
 
-  const DetailScreen({super.key, this.report});
+  const DetailScreen({super.key, this.report, this.user});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
@@ -38,6 +43,123 @@ class _DetailScreenState extends State<DetailScreen> {
     }
 
     return '${ApiService.baseUrl}/api/$imagePath';
+  }
+
+  Future<void> claimReport() async {
+    if (widget.user == null || widget.report == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User or report data not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/api/claim_report.php'),
+        body: {
+          'report_id': widget.report!.id.toString(),
+          'receive_id': widget.user!.id.toString(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message']), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Claim failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  bool isMyReport() {
+    if (widget.user == null || widget.report == null) return false;
+
+    return widget.user!.id.toString() == widget.report!.userId.toString();
+  }
+
+  bool isAlreadyReceived() {
+    if (widget.report == null) return false;
+
+    return widget.report!.receiverId != null;
+  }
+
+  String getActionButtonText() {
+    if (widget.report!.type == 'Lost') {
+      return 'Return Item';
+    } else {
+      return 'Claim Item';
+    }
+  }
+
+  String getReceiverSectionTitle() {
+    if (widget.report!.type == 'Lost') {
+      return 'Person Who Returned It';
+    } else {
+      return 'Person Who Claimed It';
+    }
+  }
+
+  String getReporterSectionTitle() {
+    if (widget.report!.type == 'Lost') {
+      return 'Person Who Lost It';
+    } else {
+      return 'Person Who Found It';
+    }
+  }
+
+  void showClaimConfirmDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(getActionButtonText()),
+          content: Text(
+            widget.report!.type == 'Lost'
+                ? 'Are you sure you want to mark this item as returned?'
+                : 'Are you sure you want to claim this item?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                claimReport();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -219,9 +341,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
             // User Information
             sectionCard(
-              title: report.type == 'Lost'
-                  ? 'Person Who Lost It'
-                  : 'Person Who Found It',
+              title: getReporterSectionTitle(),
               icon: Icons.person,
               children: [
                 detailRow(
@@ -242,42 +362,124 @@ class _DetailScreenState extends State<DetailScreen> {
               ],
             ),
 
+            const SizedBox(height: 16),
+
+            sectionCard(
+              title: 'Receive / Claim Information',
+              icon: Icons.handshake,
+              children: [
+                if (isAlreadyReceived()) ...[
+                  detailRow(
+                    icon: Icons.verified_user,
+                    label: 'Status',
+                    value: report.type == 'Lost'
+                        ? 'Item has been returned'
+                        : 'Item has been claimed',
+                    valueColor: Colors.green,
+                  ),
+                  detailRow(
+                    icon: Icons.person_outline,
+                    label: 'Name',
+                    value: report.receiverName,
+                  ),
+                  detailRow(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: report.receiverEmail,
+                  ),
+                  detailRow(
+                    icon: Icons.phone_outlined,
+                    label: 'Phone',
+                    value: report.receiverPhone,
+                  ),
+                ] else ...[
+                  detailRow(
+                    icon: Icons.hourglass_empty,
+                    label: 'Status',
+                    value: report.type == 'Lost'
+                        ? 'No one has returned this item yet'
+                        : 'No one has claimed this item yet',
+                    valueColor: Colors.orange,
+                  ),
+                ],
+              ],
+            ),
+
+            //  button
             const SizedBox(height: 24),
 
-            // Contact button
-            Container(
-              width: double.infinity,
-              height: 52,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Contact ${report.userName} using email or phone shown above.',
-                      ),
-                      backgroundColor: primaryBlue,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.contact_phone, color: Colors.white),
-                label: const Text(
-                  'Contact Reporter',
-                  style: TextStyle(
+            if (!isMyReport() && !isAlreadyReceived())
+              Container(
+                width: double.infinity,
+                height: 52,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showClaimConfirmDialog();
+                  },
+                  icon: Icon(
+                    report.type == 'Lost'
+                        ? Icons.assignment_return
+                        : Icons.check_circle,
                     color: Colors.white,
+                  ),
+                  label: Text(
+                    getActionButtonText(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: darkBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              )
+            else if (isMyReport())
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: primaryBlue),
+                ),
+                child: const Text(
+                  'This is your report. Other users can claim or return this item.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: darkBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              )
+            else
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: Text(
+                  report.type == 'Lost'
+                      ? 'This item has already been returned.'
+                      : 'This item has already been claimed.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
           ],
         ),
       ),

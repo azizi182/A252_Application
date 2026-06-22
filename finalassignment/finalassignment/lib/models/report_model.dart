@@ -17,6 +17,11 @@ class ReportModel {
   final String userEmail;
   final String userPhone;
 
+  final int? receiverId;
+  final String receiverName;
+  final String receiverEmail;
+  final String receiverPhone;
+
   ReportModel({
     required this.id,
     required this.title,
@@ -35,6 +40,11 @@ class ReportModel {
     required this.userName,
     required this.userEmail,
     required this.userPhone,
+
+    required this.receiverId,
+    required this.receiverName,
+    required this.receiverEmail,
+    required this.receiverPhone,
   });
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
@@ -51,11 +61,18 @@ class ReportModel {
       itemCategory: json['item_category'] ?? '',
       itemDescription: json['item_description'] ?? '',
       itemImagePath: json['item_imagepath'] ?? '',
-      userId: int.parse(json['user_id'].toString()),
 
+      userId: int.parse(json['user_id'].toString()),
       userName: json['user_name'] ?? '',
       userEmail: json['user_email'] ?? '',
       userPhone: json['user_phone'] ?? '',
+
+      receiverId: json['receiver_id'] == null
+          ? null
+          : int.tryParse(json['receiver_id'].toString()),
+      receiverName: json['receiver_name'] ?? '',
+      receiverEmail: json['receiver_email'] ?? '',
+      receiverPhone: json['receiver_phone'] ?? '',
     );
   }
 
@@ -78,6 +95,11 @@ class ReportModel {
       "user_name": userName,
       "user_email": userEmail,
       "user_phone": userPhone,
+
+      "receiver_id": receiverId,
+      "receiver_name": receiverName,
+      "receiver_email": receiverEmail,
+      "receiver_phone": receiverPhone,
     };
   }
 }
