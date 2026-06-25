@@ -81,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (response.statusCode == 200) {
         final resarray = jsonDecode(response.body);
 
-        if (resarray['status'] == 'success') {
+        if (resarray['success'] == true) {
           UserModel user = UserModel.fromJson(resarray['data'][0]);
 
           setState(() {
@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (response.statusCode == 200) {
         final dataReport = jsonDecode(response.body);
 
-        if (dataReport['status'] == 'success') {
+        if (dataReport['success'] == true) {
           final List reportList = dataReport['reports'] ?? [];
 
           setState(() {
@@ -183,7 +183,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (response.statusCode == 200) {
       var resarray = jsonDecode(response.body);
 
-      if (resarray['status'] == 'success') {
+      if (resarray['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -207,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> deleteMyReport(ReportModel report) async {
     final response = await http.post(
-      Uri.parse('${ApiService.baseUrl}/api/delete_my_report.php'),
+      Uri.parse('${ApiService.baseUrl}/api/delete_report.php'),
       body: {
         'report_id': report.id.toString(),
         'user_id': widget.user!.id.toString(),
@@ -235,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete Report'),
-          content: const Text('Are you sure you want to delete this report?'),
+          content: Text('Are you sure you want to delete ""${report.title}""?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -251,6 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () {
                 Navigator.pop(context);
                 deleteMyReport(report);
+                loadMyReport();
               },
               child: const Text('Delete'),
             ),
@@ -280,219 +281,221 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 16),
-
-            TextField(
-              controller: emailController,
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            SizedBox(height: 16),
-
-            TextField(
-              controller: phoneController,
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Phone',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            SizedBox(height: 32),
-            Divider(color: Colors.grey.shade300, thickness: 1, height: 1),
-            SizedBox(height: 16),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: DropdownButton<String>(
-                    value: selectedReportType,
-
-                    items: reportTypes.map((category) {
-                      return DropdownMenuItem<String>(
-                        value: category,
-                        child: Text(category),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedReportType = value!;
-                      });
-                      loadMyReport();
-                    },
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: nameController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ],
-            ),
+              ),
 
-            //card for report
-            ListView.builder(
-              itemCount: reports.length,
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final report = reports[index];
+              SizedBox(height: 16),
 
-                return InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            DetailScreen(report: report, user: widget.user),
-                      ),
-                    );
-                  },
+              TextField(
+                controller: emailController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
 
-                  child: Card(
-                    margin: const EdgeInsets.only(bottom: 14),
-                    elevation: 2,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+              SizedBox(height: 16),
+
+              TextField(
+                controller: phoneController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              SizedBox(height: 32),
+              Divider(color: Colors.grey.shade300, thickness: 1, height: 1),
+              SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: DropdownButton<String>(
+                      value: selectedReportType,
+
+                      items: reportTypes.map((category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedReportType = value!;
+                        });
+                        loadMyReport();
+                      },
                     ),
+                  ),
+                ],
+              ),
 
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
+              //card for report
+              ListView.builder(
+                itemCount: reports.length,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final report = reports[index];
 
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(18),
-                              bottomLeft: Radius.circular(18),
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DetailScreen(report: report, user: widget.user),
+                        ),
+                      );
+                    },
+
+                    child: Card(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      elevation: 2,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(18),
+                                bottomLeft: Radius.circular(18),
+                              ),
+
+                              child: Image.network(
+                                '${ApiService.baseUrl}/api/${report.itemImagePath}',
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 120,
+                                    height: 120,
+                                    color: Colors.grey.shade200,
+                                    child: Icon(
+                                      getCategoryIcon(report.itemCategory),
+                                      size: 40,
+                                      color: const Color.fromRGBO(
+                                        92,
+                                        150,
+                                        236,
+                                        1,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
 
-                            child: Image.network(
-                              '${ApiService.baseUrl}/api/${report.itemImagePath}',
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 120,
-                                  height: 120,
-                                  color: Colors.grey.shade200,
-                                  child: Icon(
-                                    getCategoryIcon(report.itemCategory),
-                                    size: 40,
-                                    color: const Color.fromRGBO(
-                                      92,
-                                      150,
-                                      236,
-                                      1,
+                            const SizedBox(width: 12),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  //title
+                                  Text(
+                                    report.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                );
-                              },
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    report.itemName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+                                  // type
+                                  Text(
+                                    '${report.type} • ${report.itemCategory}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: getTypeColor(report.type),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    report.location,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    report.status,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-
-                          const SizedBox(width: 12),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Column(
                               children: [
-                                //title
-                                Text(
-                                  report.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                                const SizedBox(height: 18),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
                                   ),
-                                ),
-
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  report.itemName,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 4),
-                                // type
-                                Text(
-                                  '${report.type} • ${report.itemCategory}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: getTypeColor(report.type),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 4),
-                                Text(
-                                  report.location,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  report.status,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  onPressed: () {
+                                    showDeleteDialog(report);
+                                  },
                                 ),
                               ],
                             ),
-                          ),
-                          Column(
-                            children: [
-                              const Icon(Icons.arrow_forward_ios, size: 16),
-                              const SizedBox(height: 18),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () {
-                                  showDeleteDialog(report);
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-            SizedBox(height: 90),
-          ],
+                  );
+                },
+              ),
+              SizedBox(height: 90),
+            ],
+          ),
         ),
       ),
     );

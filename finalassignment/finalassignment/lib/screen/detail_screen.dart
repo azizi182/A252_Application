@@ -17,6 +17,11 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
+  final receiverEmailController = TextEditingController();
+  final receiverNameController = TextEditingController();
+  final receiverPhoneController = TextEditingController();
+
+  int? selectedReceiverId;
   final Color primaryBlue = const Color.fromRGBO(92, 150, 236, 1);
   final Color darkBlue = const Color.fromARGB(255, 23, 48, 172);
   final Color backgroundColor = const Color.fromARGB(255, 236, 252, 252);
@@ -45,11 +50,93 @@ class _DetailScreenState extends State<DetailScreen> {
     return '${ApiService.baseUrl}/api/$imagePath';
   }
 
-  Future<void> claimReport() async {
-    if (widget.user == null || widget.report == null) {
+  bool isMyReport() {
+    if (widget.user == null || widget.report == null) return false;
+
+    return widget.user!.id.toString() == widget.report!.userId.toString();
+  }
+
+  bool isAlreadyReceived() {
+    if (widget.report == null) return false;
+
+    return widget.report!.receiverId != null;
+  }
+
+  String getReceiverSectionTitle() {
+    if (widget.report!.type == 'Lost') {
+      return 'Person Who Returned It';
+    } else {
+      return 'Person Who Claimed It';
+    }
+  }
+
+  String getReporterSectionTitle() {
+    if (widget.report!.type == 'Lost') {
+      return 'Person Who Lost It';
+    } else {
+      return 'Person Who Found It';
+    }
+  }
+
+  Future<void> searchReceiverByEmail() async {
+    if (receiverEmailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('User or report data not found'),
+          content: Text('Please enter receiver email'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '${ApiService.baseUrl}/api/get_user_email.php?email=${receiverEmailController.text.trim()}',
+        ),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['success'] == true) {
+        setState(() {
+          selectedReceiverId = int.tryParse(data['user']['user_id'].toString());
+          receiverNameController.text = data['user']['user_name'] ?? '';
+          receiverPhoneController.text = data['user']['user_phone'] ?? '';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User found'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        setState(() {
+          selectedReceiverId = null;
+          receiverNameController.clear();
+          receiverPhoneController.clear();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message']), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Search error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> updateReceiverInfo() async {
+    if (receiverEmailController.text.isEmpty || selectedReceiverId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please search valid receiver email first'),
           backgroundColor: Colors.red,
         ),
       );
@@ -61,7 +148,8 @@ class _DetailScreenState extends State<DetailScreen> {
         Uri.parse('${ApiService.baseUrl}/api/claim_report.php'),
         body: {
           'report_id': widget.report!.id.toString(),
-          'receive_id': widget.user!.id.toString(),
+          'owner_id': widget.user!.id.toString(),
+          'receiver_email': receiverEmailController.text.trim(),
         },
       );
 
@@ -84,59 +172,60 @@ class _DetailScreenState extends State<DetailScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Claim failed: $e'),
+          content: Text('Update error: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  bool isMyReport() {
-    if (widget.user == null || widget.report == null) return false;
+  void showUpdateReceiverDialog() {
+    receiverEmailController.clear();
+    receiverNameController.clear();
+    receiverPhoneController.clear();
+    selectedReceiverId = null;
 
-    return widget.user!.id.toString() == widget.report!.userId.toString();
-  }
-
-  bool isAlreadyReceived() {
-    if (widget.report == null) return false;
-
-    return widget.report!.receiverId != null;
-  }
-
-  String getActionButtonText() {
-    if (widget.report!.type == 'Lost') {
-      return 'Return Item';
-    } else {
-      return 'Claim Item';
-    }
-  }
-
-  String getReceiverSectionTitle() {
-    if (widget.report!.type == 'Lost') {
-      return 'Person Who Returned It';
-    } else {
-      return 'Person Who Claimed It';
-    }
-  }
-
-  String getReporterSectionTitle() {
-    if (widget.report!.type == 'Lost') {
-      return 'Person Who Lost It';
-    } else {
-      return 'Person Who Found It';
-    }
-  }
-
-  void showClaimConfirmDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(getActionButtonText()),
-          content: Text(
+          title: Text(
             widget.report!.type == 'Lost'
-                ? 'Are you sure you want to mark this item as returned?'
-                : 'Are you sure you want to claim this item?',
+                ? 'Update Return Person'
+                : 'Update Claim Person',
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: receiverEmailController,
+                decoration: InputDecoration(
+                  labelText: 'Receiver Email',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () {
+                      searchReceiverByEmail();
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: receiverNameController,
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: receiverPhoneController,
+                readOnly: true,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -146,15 +235,15 @@ class _DetailScreenState extends State<DetailScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                claimReport();
-              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryBlue,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Confirm'),
+              onPressed: () {
+                Navigator.pop(context);
+                updateReceiverInfo();
+              },
+              child: const Text('Save'),
             ),
           ],
         );
@@ -408,24 +497,23 @@ class _DetailScreenState extends State<DetailScreen> {
             //  button
             const SizedBox(height: 24),
 
-            if (!isMyReport() && !isAlreadyReceived())
+            if (!isMyReport())
               Container(
                 width: double.infinity,
                 height: 52,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    showClaimConfirmDialog();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Contact owner: ${report.userPhone}'),
+                      ),
+                    );
                   },
-                  icon: Icon(
-                    report.type == 'Lost'
-                        ? Icons.assignment_return
-                        : Icons.check_circle,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    getActionButtonText(),
-                    style: const TextStyle(
+                  icon: const Icon(Icons.chat, color: Colors.white),
+                  label: const Text(
+                    'Chat Owner',
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -438,22 +526,30 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                 ),
               )
-            else if (isMyReport())
+            else if (isMyReport() && !isAlreadyReceived())
               Container(
                 width: double.infinity,
+                height: 52,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: primaryBlue),
-                ),
-                child: const Text(
-                  'This is your report. Other users can claim or return this item.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showUpdateReceiverDialog();
+                  },
+                  icon: const Icon(Icons.person_add, color: Colors.white),
+                  label: Text(
+                    report.type == 'Lost'
+                        ? 'Update Return Person'
+                        : 'Update Claim Person',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: darkBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               )

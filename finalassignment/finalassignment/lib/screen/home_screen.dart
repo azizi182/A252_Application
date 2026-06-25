@@ -299,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Hi, ${widget.user!.name}',
+                        'Welcome to LostLink App',
 
                         style: const TextStyle(
                           color: Colors.white,
